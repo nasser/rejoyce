@@ -1,0 +1,480 @@
+<meta charset="utf-8">
+<script src="js/sugar.js"></script>
+<script src="js/peg.js"></script>
+<script src="js/plt.js"></script>
+
+<script type="text/javascript">
+  PLT.refresh = false;
+
+  var Rejoyce = {
+    stdlib: "\
+    ['Rejoyce]            'name def  \
+    [3.141592653589793]   'pi   def   \
+    [dup *]               'sq   def   \
+    [[] rollup swap dup swap rollup - abs [1 + dup rolldown cons swap] times zap] 'range def   \
+    [rollup range swap map i] 'repeat def   \
+    ",
+
+    dictionary: {
+      // Kerby's minimal base http://tunes.org/~iepos/joy.html
+
+      // [a] -- a
+      'i': function(stack) {
+        return Rejoyce.eval( stack.pop(), stack);
+      },
+
+      // b [a] -- [b a]
+      'cons': function(stack) {
+        var a = stack.pop().clone();
+        var b = stack.pop();
+
+        a.unshift(b)
+        stack.push(a);
+
+        return stack;
+      },
+
+      // [b] [a] -- [b] a [b]
+      'sip': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+
+        a.unshift(b)
+        a.push(b)
+
+        return Rejoyce.eval( a, stack );
+      },
+
+      // n --
+      'zap': function(stack) {
+        stack.pop();
+        return stack;
+      },
+
+
+      'k': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+
+        return Rejoyce.eval(a, stack);
+      },
+
+
+
+      // [a] b -- [a b]
+      'swons': function(stack) {
+        var b = stack.pop();
+        var a = stack.pop().clone();
+
+        a.push(b)
+        stack.push(a);
+
+        return stack;
+      },
+
+      // [a] b -- [a b]
+      'swons': function(stack) {
+        var b = stack.pop();
+        var a = stack.pop().clone();
+
+        a.push(b)
+        stack.push(a);
+
+        return stack;
+      },
+
+      // [b] [a] -- [[b] a] [a [b]]
+      'cake': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+
+        var aFirst = a.clone()
+        var aSecond = a.clone()
+
+        aFirst.push(b)
+        aSecond.unshift(b)
+
+        stack.push(aSecond);
+        stack.push(aFirst);
+
+        return stack;
+      },
+
+      // x y z -- z x y
+      'rollup': function(stack) {
+        var z = stack.pop()
+        var y = stack.pop()
+        var x = stack.pop()
+
+        stack.push(z)
+        stack.push(x)
+        stack.push(y)
+
+        return stack;
+      },
+
+      // x y z -- y z x
+      'rolldown': function(stack) {
+        var z = stack.pop()
+        var y = stack.pop()
+        var x = stack.pop()
+
+        stack.push(y)
+        stack.push(z)
+        stack.push(x)
+
+        return stack;
+      },
+
+      // a b -- c
+      'abs': function(stack) {
+        stack.push(Math.abs(stack.pop()))
+
+        return stack;
+      },
+
+      // [a] n -- b
+      'at': function(stack) {
+        var n = stack.pop()
+        var a = stack.pop()
+
+        stack.push(a[n])
+
+        return stack;
+      },
+
+      // a b -- c
+      'min': function(stack) {
+        var a = stack.pop()
+        var b = stack.pop()
+
+        stack.push(Math.min(a, b))
+
+        return stack;
+      },
+
+      // a b -- c
+      'max': function(stack) {
+        var a = stack.pop()
+        var b = stack.pop()
+
+        stack.push(Math.max(a, b))
+
+        return stack;
+      },
+
+      // -- r
+      'random': function(stack) {
+        stack.push(Math.random())
+        return stack;
+      },
+
+      // [] name --
+      'def': function(stack) {
+        var name = stack.pop()
+        var value = stack.pop()
+        Rejoyce.dictionary[name] = function(stack) { return Rejoyce.eval(value, stack); };
+
+        return stack;
+      },
+
+      'undef': function(stack) {
+        Rejoyce.dictionary[stack.pop()] = undefined
+        return stack;
+      },
+
+      'true': function(stack) {
+        stack.push(true)
+        return stack;
+      },
+
+      'or': function(stack) {
+        var a = stack.pop()
+        var b = stack.pop()
+        stack.push(a || b)
+        return stack;
+      },
+
+      'false': function(stack) {
+        stack.push(false)
+        return stack;
+      },
+
+      // n -- n n
+      'dup': function(stack) {
+        return stack.concat(stack.slice(-1));;
+      },
+
+      // n m -- n m n m
+      '2dup': function(stack) {
+        return stack.concat(stack.slice(-2));;
+      },
+
+      // n m -- n m n m
+      '3dup': function(stack) {
+        return stack.concat(stack.slice(-3));;
+      },
+
+      'swap': function(stack) {
+        return stack.concat([stack.pop(), stack.pop()]);
+      },
+
+      // dip      :  X [P]  ->  ... X
+      'dip': function(stack) {
+        var quot = stack.pop();
+        var x = stack.pop();
+
+        var s = Rejoyce.eval( quot, stack )
+        s.push(x)
+
+        return s;
+      },
+
+      'if': function(stack) {
+        var trueQuot = stack.pop()
+        var b = stack.pop()
+
+        if(b) {
+          return Rejoyce.eval( trueQuot, stack)
+        } else {
+          return stack;
+        }
+      },
+
+      'ifte': function(stack) {
+        var falseQuot = stack.pop()
+        var trueQuot = stack.pop()
+        var b = stack.pop()
+
+        if(b) {
+          return Rejoyce.eval( trueQuot, stack)
+        } else {
+          return Rejoyce.eval( falseQuot, stack)
+        }
+      },
+
+      // [list] [fn] -- [list']
+      'map': function(stack) {
+        var quot = stack.pop()
+        var list = stack.pop()
+
+        stack.push( list.map(function(l) {
+          return Rejoyce.eval(quot, [l]).last();
+        }));
+
+        return stack;
+      },
+
+      // [list] [fn] -- [list']
+      'times': function(stack) {
+        var quot = stack.pop()
+        var t = stack.pop()
+
+        while(t-- > 0) {
+          stack = Rejoyce.eval(quot, stack);
+        }
+
+        return stack;
+      },
+
+      // [list] [fn] -- [list']
+      'filter': function(stack) {
+        var quot = stack.pop()
+        var list = stack.pop()
+
+        stack.push( list.filter(function(l) {
+          return Rejoyce.eval(quot, [l]).last();
+        }));
+
+        return stack;
+      },
+
+      // a b -- b+a
+      '+': function(stack) {
+        stack.push(stack.pop() + stack.pop());
+        return stack;
+      },
+
+      // a b -- b-a
+      '-': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        stack.push(b - a);
+        return stack;
+      },
+
+      // a b -- b-a
+      '<': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        stack.push(b < a);
+        return stack;
+      },
+
+      // a b -- b=a
+      '=': function(stack) {
+        stack.push(stack.pop() == stack.pop());
+        return stack;
+      },
+
+      // a b -- b-a
+      '>': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        stack.push(b > a);
+        return stack;
+      },
+
+      // a b -- b*a
+      '*': function(stack) {
+        stack.push(stack.pop() * stack.pop());
+        return stack;
+      },
+
+      // a b -- b/a
+      '/': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        stack.push(b / a);
+        return stack;
+      },
+
+      // a --
+      '.': function(stack) {
+        console.log(stack.pop());
+        return stack;
+      },
+
+      // a --
+      'print-stack': function(stack) {
+        console.log(stack);
+        return stack;
+      },
+
+
+
+      // name --
+      'new-stack': function(stack) {
+        return stack;
+      },
+
+
+      'line': function(stack) {
+        var x0 = stack.pop();
+        var y0 = stack.pop();
+        var x1 = stack.pop();
+        var y1 = stack.pop();
+
+        console.log("line (" + x0 + "," + y0 + ") (" + x1 + "," + y1 + ")")
+
+        return stack;
+      },
+
+      'paper': function(stack) {
+        var p = stack.pop();
+
+        console.log("paper (" + p + ")")
+
+        return stack;
+      },
+
+      'pen': function(stack) {
+        var p = stack.pop();
+
+        console.log("pen (" + p + ")")
+
+        return stack;
+      }
+    },
+
+    eval: function(source, stack) {
+      return source.reduce(function(s, a) {
+        var sclone = s.clone()
+
+        if(a.word) {
+          return Rejoyce.dictionary[a.word](sclone);
+
+        } else {
+          sclone.push(a);
+          return sclone;
+
+        }
+
+      }, stack)
+    },
+
+    compile: function(source) {
+      var ary = PLT.parser.parse(source);
+
+      return function(stack) {
+        return Rejoyce.eval(ary, stack);
+      }
+    }
+  }
+</script>
+
+<title>Rejoyce</title>
+
+<grammar>
+  start                         = program
+
+  program                       = literal*
+
+  literal                       = l:(quotation / string / number / word) space { return l }
+
+  quotation                     = '[' space p:program ']' { return p }
+
+  string                        = single_quoted_string / double_quoted_string
+  double_quoted_string          = '"' s:[^"]+ '"' { return s.join('') }
+  single_quoted_string          = "'" s:[^ \n;\{\}\(\)\[\]]+ { return s.join('') }
+
+  word                          = w:[^\[\] ]+ { return { word:w.join('').trim() } }
+
+  number                        = n:(float_between_01 / float / integer) (mandatory_space / '[' / ']') { return n }
+  float                         = s:'-'? n:digit+ '.' m:digit+ { return parseFloat( s + n.join('') + "." + m.join('') )}
+  float_between_01              = s:'-'? '.' n:digit+ { return parseFloat( s + "0." + n.join('') )}
+  integer                       = s:'-'? n:digit+ { return parseInt(s + n.join('')) }
+  digit                         = [0123456789]
+
+  space                         = [ ]* / !. { return undefined }
+  mandatory_space               = [ ]+ / !. { return undefined }
+</grammar>
+
+<h3>Number Literals</h3>
+<code>20 </code>
+<code>-6</code>
+<code>.75</code>
+<code>-.75</code>
+<code>42.13</code>
+<code>-42.13</code>
+
+<h3>String Literals</h3>
+<code>"double quote"</code>
+<code>'single</code>
+<code>'*</code>
+
+<h3>Words</h3>
+<code>hello</code>
+<code></code>
+<code>hello-world</code>
+<code>m1a1</code>
+<code>-></code>
+<code>2dup</code>
+<code>foo/bar</code>
+<code>foo:bar</code>
+
+<h3>Quotations</h3>
+<code>['hello]</code>
+<code>[ 'hello]</code>
+<code>['hello ]</code>
+<code>[5 1 +]</code>
+<code>[5 1 + [dup *] i]</code>
+<code>[hello world]</code>
+<code>[hello world ]</code>
+<code>[ hello world]</code>
+<code>[ hello world ]</code>
+<code>[hello
+  world]</code>
+
+<h3>Programs</h3>
+<code>5 6 dup * +</code>
