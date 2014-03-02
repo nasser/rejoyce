@@ -7,6 +7,14 @@
   PLT.refresh = false;
 
   var Rejoyce = {
+    repl: {
+      stack: [],
+      eval: function(source) {
+        Rejoyce.repl.stack = Rejoyce.compile(source)(Rejoyce.repl.stack);
+        return Rejoyce.stringify(Rejoyce.repl.stack);
+      }
+    },
+
     dictionary: {
       // Kerby's minimal base http://tunes.org/~iepos/joy.html
 
