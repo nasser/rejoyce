@@ -349,41 +349,6 @@
       'print-stack': function(stack) {
         console.log(stack);
         return stack;
-      },
-
-
-
-      // name --
-      'new-stack': function(stack) {
-        return stack;
-      },
-
-
-      'line': function(stack) {
-        var x0 = stack.pop();
-        var y0 = stack.pop();
-        var x1 = stack.pop();
-        var y1 = stack.pop();
-
-        console.log("line (" + x0 + "," + y0 + ") (" + x1 + "," + y1 + ")")
-
-        return stack;
-      },
-
-      'paper': function(stack) {
-        var p = stack.pop();
-
-        console.log("paper (" + p + ")")
-
-        return stack;
-      },
-
-      'pen': function(stack) {
-        var p = stack.pop();
-
-        console.log("pen (" + p + ")")
-
-        return stack;
       }
     },
 
