@@ -175,8 +175,10 @@
         return stack;
       },
 
-      'true': function(stack) {
-        stack.push(true)
+      'and': function(stack) {
+        var a = stack.pop()
+        var b = stack.pop()
+        stack.push(a && b)
         return stack;
       },
 
@@ -186,6 +188,12 @@
         stack.push(a || b)
         return stack;
       },
+
+      'true': function(stack) {
+        stack.push(true)
+        return stack;
+      },
+
 
       'false': function(stack) {
         stack.push(false)
