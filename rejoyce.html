@@ -347,8 +347,18 @@
 
       // a --
       'print-stack': function(stack) {
-        console.log(stack);
+        console.log(Rejoyce.stringify(stack));
         return stack;
+      }
+    },
+
+    stringify: function(v) {
+      if(v.join) {
+        return '[' + v.map(function(e) { return Rejoyce.stringify(e); }).join(' ') + ']'
+      } else if(v.word) {
+        return v.word
+      } else {
+        return JSON.stringify(v)
       }
     },
 
