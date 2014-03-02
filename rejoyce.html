@@ -395,7 +395,7 @@
 
   word                          = w:[^\[\] ]+ { return { word:w.join('').trim() } }
 
-  number                        = n:(float_between_01 / float / integer) (mandatory_space / '[' / ']') { return n }
+  number                        = n:(float_between_01 / float / integer) (space / '[' / ']') { return n }
   float                         = s:'-'? n:digit+ '.' m:digit+ { return parseFloat( s + n.join('') + "." + m.join('') )}
   float_between_01              = s:'-'? '.' n:digit+ { return parseFloat( s + "0." + n.join('') )}
   integer                       = s:'-'? n:digit+ { return parseInt(s + n.join('')) }
