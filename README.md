@@ -14,6 +14,8 @@ Files
 * `rejoyce-xy.html` - Rejoyce with [XY](http://nsl.com/k/xy/xy.htm) stack-queue semantics. An experiment.
 * `joy.html` - An attempt at a conceptually pure implementation of Joy. All tokens parse into functions that take and return stacks, as in von Thun's formalisms. This turned out to be a bad idea. Largely broken.
 
+These will be separate branches eventually.
+
 Usage
 -----
 Fire up the JavaScript console and use `Joy.repl.eval("")` or `Rejoyce.repl.eval("")` to write code. When plt.js gets built in REPL support this will be more seamless.
