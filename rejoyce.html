@@ -377,19 +377,23 @@
     },
 
     eval: function(source, stack) {
-      return source.reduce(function(s, a) {
-        var sclone = s.clone()
+      for (var i = 0; i < source.length; i++) {
+        stack = source[i].reverse().reduce(function(s, a) {
+          var sclone = s.clone()
 
-        if(a.word) {
-          return Rejoyce.dictionary[a.word](sclone);
+          if(a.word) {
+            return Rejoyce.dictionary[a.word](sclone);
 
-        } else {
-          sclone.push(a);
-          return sclone;
+          } else {
+            sclone.push(a);
+            return sclone;
 
-        }
+          }
 
-      }, stack)
+        }, stack);
+      };
+
+      return stack;
     },
 
     compile: function(source) {
@@ -409,17 +413,20 @@
 <grammar>
   start                         = program
 
-  program                       = literal*
+  program                       = fragment*
+
+  fragment                      = f:literal+ space terminator? { return f }
+  terminator                    = !. / ';' / '\n'
 
   literal                       = l:(quotation / string / number / word) space { return l }
 
-  quotation                     = '[' space p:program ']' { return p }
+  quotation                     = '[' space f:fragment? ']' { return f || [] }
 
   string                        = single_quoted_string / double_quoted_string
   double_quoted_string          = '"' s:[^"]+ '"' { return s.join('') }
   single_quoted_string          = "'" s:[^ \n;\{\}\(\)\[\]]+ { return s.join('') }
 
-  word                          = w:[^\[\] ]+ { return { word:w.join('').trim() } }
+  word                          = w:[^;\n\[\] ]+ { return { word:w.join('').trim() } }
 
   number                        = n:(float_between_01 / float / integer) (space / '[' / ']') { return n }
   float                         = s:'-'? n:digit+ '.' m:digit+ { return parseFloat( s + n.join('') + "." + m.join('') )}
@@ -432,7 +439,7 @@
 </grammar>
 
 <h3>Number Literals</h3>
-<code>20 </code>
+<code>20</code>
 <code>-6</code>
 <code>.75</code>
 <code>-.75</code>
