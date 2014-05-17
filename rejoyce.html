@@ -293,6 +293,9 @@
         var quot = stack.pop()
         var list = stack.pop()
 
+        if( typeof list == "string" )
+          list = list.split('');
+
         stack.push( list.filter(function(l) {
           return Rejoyce.eval(quot, [l]).last();
         }));
