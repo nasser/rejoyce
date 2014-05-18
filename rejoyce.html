@@ -10,9 +10,13 @@
 <script type="text/javascript">
   PLT.refresh = false;
 
+  mori.vector_from_array = function(ary) {
+    return mori.vector.apply(null, ary);
+  }
+
   var Rejoyce = {
     repl: {
-      stack: [],
+      stack: mori.vector(),
       eval: function(source) {
         Rejoyce.repl.stack = Rejoyce.compile(source)(Rejoyce.repl.stack);
         return Rejoyce.stringify(Rejoyce.repl.stack);
@@ -24,7 +28,8 @@
 
       // [a] -- a
       'i': function(stack) {
-        return Rejoyce.eval( stack.pop(), stack);
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        return Rejoyce.eval(a, stack);
       },
 
       // b [a] -- [b a]
@@ -76,17 +81,6 @@
         return stack;
       },
 
-      // [a] b -- [a b]
-      'swons': function(stack) {
-        var b = stack.pop();
-        var a = stack.pop().clone();
-
-        a.push(b)
-        stack.push(a);
-
-        return stack;
-      },
-
       // [b] [a] -- [[b] a] [a [b]]
       'cake': function(stack) {
         var a = stack.pop();
@@ -105,36 +99,27 @@
       },
 
       // x y z -- z x y
-      'rollup': function(stack) {
-        var z = stack.pop()
-        var y = stack.pop()
-        var x = stack.pop()
+      'rolldown': function(stack) {
+        var z = mori.peek(stack); stack = mori.pop(stack);
+        var y = mori.peek(stack); stack = mori.pop(stack);
+        var x = mori.peek(stack); stack = mori.pop(stack);
 
-        stack.push(z)
-        stack.push(x)
-        stack.push(y)
-
-        return stack;
+        return mori.conj(stack, z, x, y);
       },
 
       // x y z -- y z x
-      'rolldown': function(stack) {
-        var z = stack.pop()
-        var y = stack.pop()
-        var x = stack.pop()
+      'rollup': function(stack) {
+        var z = mori.peek(stack); stack = mori.pop(stack);
+        var y = mori.peek(stack); stack = mori.pop(stack);
+        var x = mori.peek(stack); stack = mori.pop(stack);
 
-        stack.push(y)
-        stack.push(z)
-        stack.push(x)
-
-        return stack;
+        return mori.conj(stack, y, z, x);
       },
 
       // a b -- c
       'abs': function(stack) {
-        stack.push(Math.abs(stack.pop()))
-
-        return stack;
+        var n = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, Math.abs(n));
       },
 
       // [a] n -- b
@@ -149,72 +134,63 @@
 
       // a b -- c
       'min': function(stack) {
-        var a = stack.pop()
-        var b = stack.pop()
-
-        stack.push(Math.min(a, b))
-
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, Math.min(a, b));
       },
 
       // a b -- c
       'max': function(stack) {
-        var a = stack.pop()
-        var b = stack.pop()
-
-        stack.push(Math.max(a, b))
-
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, Math.max(a, b));
       },
 
       // -- r
       'random': function(stack) {
-        stack.push(Math.random())
-        return stack;
+        return mori.conj(stack, Math.random());
       },
 
       // [] name --
       'def': function(stack) {
-        var name = stack.pop()
-        var value = stack.pop()
+        var name = mori.peek(stack); stack = mori.pop(stack);
+        var value = mori.peek(stack); stack = mori.pop(stack);
         Rejoyce.dictionary[name] = function(stack) { return Rejoyce.eval(value, stack); };
 
         return stack;
       },
 
       'undef': function(stack) {
-        Rejoyce.dictionary[stack.pop()] = undefined
+        var name = mori.peek(stack); stack = mori.pop(stack);
+
+        Rejoyce.dictionary[name] = undefined
         return stack;
       },
 
       'and': function(stack) {
-        var a = stack.pop()
-        var b = stack.pop()
-        stack.push(a && b)
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, a && b);
       },
 
       'or': function(stack) {
-        var a = stack.pop()
-        var b = stack.pop()
-        stack.push(a || b)
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, a || b);
       },
 
       'true': function(stack) {
-        stack.push(true)
-        return stack;
+        return mori.conj(stack, true);
       },
 
 
       'false': function(stack) {
-        stack.push(false)
-        return stack;
+        return mori.conj(stack, false);
       },
 
       // n -- n n
       'dup': function(stack) {
-        return stack.concat(stack.slice(-1));;
+        return mori.conj(stack, mori.peek(stack));
       },
 
       // n m -- n m n m
@@ -228,59 +204,74 @@
       },
 
       'swap': function(stack) {
-        return stack.concat([stack.pop(), stack.pop()]);
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+
+        return mori.conj(stack, a, b);
+      },
+
+      'even?': function(stack) {
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, mori.is_even(a));
+      },
+
+      'odd?': function(stack) {
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, mori.is_odd(a));
+      },
+
+      'range': function(stack) {
+        var stop = mori.peek(stack); stack = mori.pop(stack);
+        var start = mori.peek(stack); stack = mori.pop(stack);
+
+        return mori.conj(stack, mori.into(mori.vector(), mori.range(start, stop)));
       },
 
       // dip      :  X [P]  ->  ... X
       'dip': function(stack) {
-        var quot = stack.pop();
-        var x = stack.pop();
+        var quot = mori.peek(stack); stack = mori.pop(stack);
+        var x = mori.peek(stack); stack = mori.pop(stack);
 
-        var s = Rejoyce.eval( quot, stack )
-        s.push(x)
-
-        return s;
+        return mori.conj(Rejoyce.eval(quot, stack), x);
       },
 
       'if': function(stack) {
-        var trueQuot = stack.pop()
-        var b = stack.pop()
+        var trueQuot = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
 
         if(b) {
-          return Rejoyce.eval( trueQuot, stack)
+          return Rejoyce.eval(trueQuot, stack)
         } else {
           return stack;
         }
       },
 
       'ifte': function(stack) {
-        var falseQuot = stack.pop()
-        var trueQuot = stack.pop()
-        var b = stack.pop()
+        var falseQuot = mori.peek(stack); stack = mori.pop(stack);
+        var trueQuot = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
 
         if(b) {
-          return Rejoyce.eval( trueQuot, stack)
+          return Rejoyce.eval(trueQuot, stack)
         } else {
-          return Rejoyce.eval( falseQuot, stack)
+          return Rejoyce.eval(falseQuot, stack)
         }
       },
 
       // [list] [fn] -- [list']
       'map': function(stack) {
-        var quot = stack.pop()
-        var list = stack.pop()
+        var quot = mori.peek(stack); stack = mori.pop(stack);
+        var list = mori.peek(stack); stack = mori.pop(stack);
 
-        stack.push( list.map(function(l) {
-          return Rejoyce.eval(quot, [l]).last();
-        }));
-
-        return stack;
+        return mori.conj(stack, mori.into(mori.vector(), mori.map(function(l) {
+          return mori.last(Rejoyce.eval(quot, mori.vector(l)));
+        }, list)));
       },
 
       // [list] [fn] -- [list']
       'times': function(stack) {
-        var quot = stack.pop()
-        var t = stack.pop()
+        var t = mori.peek(stack); stack = mori.pop(stack);
+        var quot = mori.peek(stack); stack = mori.pop(stack);
 
         while(t-- > 0) {
           stack = Rejoyce.eval(quot, stack);
@@ -291,73 +282,67 @@
 
       // [list] [fn] -- [list']
       'filter': function(stack) {
-        var quot = stack.pop()
-        var list = stack.pop()
+        var quot = mori.peek(stack); stack = mori.pop(stack);
+        var list = mori.peek(stack); stack = mori.pop(stack);
 
-        if( typeof list == "string" )
-          list = list.split('');
-
-        stack.push( list.filter(function(l) {
-          return Rejoyce.eval(quot, [l]).last();
-        }));
-
-        return stack;
+        return mori.conj(stack, mori.into(mori.vector(), mori.filter(function(l) {
+          return mori.last(Rejoyce.eval(quot, mori.vector(l)));
+        }, list)));
       },
 
       // a b -- b+a
       '+': function(stack) {
-        stack.push(stack.pop() + stack.pop());
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b + a);
       },
 
       // a b -- b-a
       '-': function(stack) {
-        var a = stack.pop();
-        var b = stack.pop();
-        stack.push(b - a);
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b - a);
       },
 
-      // a b -- b-a
+      // a b -- b<a
       '<': function(stack) {
-        var a = stack.pop();
-        var b = stack.pop();
-        stack.push(b < a);
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b < a);
       },
 
       // a b -- b=a
       '=': function(stack) {
-        stack.push(stack.pop() == stack.pop());
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b == a);
       },
 
-      // a b -- b-a
+      // a b -- b>a
       '>': function(stack) {
-        var a = stack.pop();
-        var b = stack.pop();
-        stack.push(b > a);
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b > a);
       },
 
       // a b -- b*a
       '*': function(stack) {
-        stack.push(stack.pop() * stack.pop());
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b * a);
       },
 
       // a b -- b/a
       '/': function(stack) {
-        var a = stack.pop();
-        var b = stack.pop();
-        stack.push(b / a);
-        return stack;
+        var a = mori.peek(stack); stack = mori.pop(stack);
+        var b = mori.peek(stack); stack = mori.pop(stack);
+        return mori.conj(stack, b / a);
       },
 
       // a --
       '.': function(stack) {
-        console.log(stack.pop());
-        return stack;
+        console.log(mori.peek(stack));
+        return mori.pop(stack);
       },
 
       // a --
@@ -368,36 +353,51 @@
     },
 
     stringify: function(v) {
-      if(v.join) {
-        return '[' + v.map(function(e) { return Rejoyce.stringify(e); }).join(' ') + ']'
+      if(mori.is_vector(v)) {
+        return "[" + mori.into_array(v).map(Rejoyce.stringify).join(" ") + "]"
+
       } else if(v.word) {
-        return v.word
+        return v.word;
+
       } else {
-        return JSON.stringify(v)
+        return JSON.stringify(v);
       }
     },
 
     eval: function(source, stack) {
-      return source.reduce(function(s, a) {
-        var sclone = s.clone()
-
-        if(a.word) {
-          return Rejoyce.dictionary[a.word](sclone);
+      return mori.reduce(function(stk, tok) {
+        if(tok.word) {
+          return Rejoyce.dictionary[tok.word](stk);
 
         } else {
-          sclone.push(a);
-          return sclone;
+          return mori.conj(stk, tok);
 
         }
 
-      }, stack)
+      }, stack, source);
     },
 
+    // eval: function(source, stack) {
+    //   return source.reduce(function(s, a) {
+    //     var sclone = s.clone()
+
+    //     if(a.word) {
+    //       return Rejoyce.dictionary[a.word](sclone);
+
+    //     } else {
+    //       sclone.push(a);
+    //       return sclone;
+
+    //     }
+
+    //   }, stack)
+    // },
+
     compile: function(source) {
-      var ary = PLT.parser.parse(source);
+      var vec = PLT.parser.parse(source);
 
       return function(stack) {
-        return Rejoyce.eval(ary, stack);
+        return Rejoyce.eval(vec, stack);
       }
     }
   }
@@ -405,12 +405,12 @@
   PLT.repl = Rejoyce.repl.eval;
 </script>
 
-<title>Rejoyce</title>
+<title>Immutable Rejoyce</title>
 
 <grammar>
   start                         = program
 
-  program                       = literal*
+  program                       = p:literal* { return mori.vector_from_array(p) }
 
   literal                       = l:(quotation / string / number / word) space { return l }
 
