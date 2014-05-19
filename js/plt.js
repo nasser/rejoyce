@@ -34,7 +34,7 @@ $(function() {
   grammarElement.remove();
 
   var stringifiedParse = function(source) {
-    return JSON.stringify(PLT.parser.parse(source));
+    return PLT.parser.parse(source).toString();
   }
 
   // build repl object
