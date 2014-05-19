@@ -394,7 +394,7 @@
     // },
 
     compile: function(source) {
-      var vec = PLT.parser.parse(source);
+      var vec = PLT.parser.parse(source.trim());
 
       return function(stack) {
         return Rejoyce.eval(vec, stack);
