@@ -10,9 +10,7 @@
 <script type="text/javascript">
   PLT.refresh = false;
 
-  mori.vector_from_array = function(ary) {
-    return mori.vector.apply(null, ary);
-  }
+  mori.name = function(k) { return k.name }
 
   var Rejoyce = {
     repl: {
@@ -25,6 +23,8 @@
 
     dictionary: {
       // Kerby's minimal base http://tunes.org/~iepos/joy.html
+
+      'module': "core",
 
       // [a] -- a
       'i': function(stack) {
@@ -255,7 +255,7 @@
         var list = mori.peek(stack); stack = mori.pop(stack);
 
         return mori.conj(stack, mori.into(mori.vector(), mori.map(function(l) {
-          return mori.last(Rejoyce.eval(quot, mori.vector(l)));
+          return mori.last(Rejoyce.eval(quot, mori.conj(stack, l)));
         }, list)));
       },
 
@@ -277,7 +277,7 @@
         var list = mori.peek(stack); stack = mori.pop(stack);
 
         return mori.conj(stack, mori.into(mori.vector(), mori.filter(function(l) {
-          return mori.last(Rejoyce.eval(quot, mori.vector(l)));
+          return mori.last(Rejoyce.eval(quot, mori.conj(stack, l)));
         }, list)));
       },
 
@@ -343,22 +343,54 @@
       }
     },
 
+    objectToDictionary: function(obj) {
+      return mori.reduce_kv(function(a,k,v) { return mori.assoc(a, mori.keyword(k), v) }, mori.hash_map(), mori.js_to_clj(obj));
+    },
+
     stringify: function(v) {
       if(mori.is_vector(v)) {
-        return "[" + mori.into_array(v).map(Rejoyce.stringify).join(" ") + "]"
+        return "[" + mori.into_array(mori.map(Rejoyce.stringify, v)).join(' ')  + "]"
 
-      } else if(v.word) {
-        return v.word;
+      } else if(mori.is_map(v)) {
+        if(mori.count(v) < 10) {
+          return v.toString();
+
+        } else {
+          return "{" + (mori.has_key(v, mori.keyword("module")) ? mori.get(v, mori.keyword("module")) + ":" : "") + mori.count(v) + "}";
+
+        }
 
       } else {
         return JSON.stringify(v);
+
       }
     },
 
+    lookup: function(keyword, stack) {
+      return mori.get(
+        mori.last(
+          mori.filter(
+            mori.curry(mori.has_key, keyword),
+            stack)),
+        keyword);
+    },
+
     eval: function(source, stack) {
+      if(!mori.is_vector(source))
+        source = mori.vector(source);
       return mori.reduce(function(stk, tok) {
-        if(tok.word) {
-          return Rejoyce.dictionary[tok.word](stk);
+        if(mori.is_keyword(tok)) {
+          var val = Rejoyce.lookup(tok, stk);
+          if(val == null) {
+            throw new Error("Word '" + tok.name + "' not found!");
+
+          } else if(typeof val == "function") {
+            return val(stk);
+
+          } else {
+            return Rejoyce.eval(val, stk);
+
+          }
 
         } else {
           return mori.conj(stk, tok);
@@ -377,6 +409,7 @@
   }
 
   PLT.repl = Rejoyce.repl.eval;
+  Rejoyce.repl.stack = mori.vector(Rejoyce.objectToDictionary(Rejoyce.dictionary));
 </script>
 
 <title>Immutable Rejoyce</title>
