@@ -362,27 +362,10 @@
 
         } else {
           return mori.conj(stk, tok);
-
         }
 
       }, stack, source);
     },
-
-    // eval: function(source, stack) {
-    //   return source.reduce(function(s, a) {
-    //     var sclone = s.clone()
-
-    //     if(a.word) {
-    //       return Rejoyce.dictionary[a.word](sclone);
-
-    //     } else {
-    //       sclone.push(a);
-    //       return sclone;
-
-    //     }
-
-    //   }, stack)
-    // },
 
     compile: function(source) {
       var vec = PLT.parser.parse(source.trim());
