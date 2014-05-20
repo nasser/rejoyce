@@ -179,15 +179,6 @@
         return mori.conj(stack, a || b);
       },
 
-      'true': function(stack) {
-        return mori.conj(stack, true);
-      },
-
-
-      'false': function(stack) {
-        return mori.conj(stack, false);
-      },
-
       // n -- n n
       'dup': function(stack) {
         return mori.conj(stack, mori.peek(stack));
@@ -410,9 +401,11 @@
 <grammar>
   start                         = program
 
-  program                       = p:literal* { return mori.vector_from_array(p) }
+  program                       = p:literal* { return mori.vector.apply(null, p); }
 
-  literal                       = l:(quotation / string / number / word) space { return l }
+  literal                       = l:(dictionary / quotation / string / boolean / number / word) space { return l }
+
+  dictionary                    = '{' space kv:literal* '}' { return mori.hash_map.apply(null, kv) }
 
   quotation                     = '[' space p:program ']' { return p }
 
@@ -420,7 +413,9 @@
   double_quoted_string          = '"' s:[^"]+ '"' { return s.join('') }
   single_quoted_string          = "'" s:[^ \n;\{\}\(\)\[\]]+ { return s.join('') }
 
-  word                          = w:[^\[\] ]+ { return { word:w.join('').trim() } }
+  word                          = w:[^\[\]\{\} ]+ { return mori.keyword(w.join('').trim()) }
+
+  boolean                       = 'true' { return true } / 'false' { return false }
 
   number                        = n:(float_between_01 / float / integer) (space / '[' / ']') { return n }
   float                         = s:'-'? n:digit+ '.' m:digit+ { return parseFloat( s + n.join('') + "." + m.join('') )}
@@ -454,6 +449,14 @@
 <code>2dup</code>
 <code>foo/bar</code>
 <code>foo:bar</code>
+
+<h3>Dictionaries</h3>
+<code>{}</code>
+<code>{ }</code>
+<code>{hello 12}</code>
+<code>{ hello 12 }</code>
+<code>{name 'ramsey cool true job 'hacker}</code>
+<code>{square [dup *]}</code>
 
 <h3>Quotations</h3>
 <code>['hello]</code>
