@@ -1,0 +1,231 @@
+<meta charset="utf-8">
+<script src="js/sugar.js"></script>
+<script src="js/peg.js"></script>
+<script src="js/plt.js"></script>
+<script type="text/javascript">
+  PLT.refresh = false;
+
+  var Joy = {
+    repl : {
+      stack: [],
+      eval: function(source) {
+        Joy.repl.stack = Joy.compile(source)(Joy.repl.stack);
+        return Joy.repl.stack;
+      }
+    },
+
+    dictionary: {
+      // [] name --
+      'def': function(stack) {
+        var name = stack.pop()
+        var value = stack.pop()
+        Joy.dictionary[name] = value;
+        return stack;
+      },
+
+      // fn arity name --
+      'defn': function(stack) {
+        var name = stack.pop()
+        var arity = stack.pop()
+        var fn = eval(stack.pop())
+        Joy.dictionary[name] = function(stack) {
+          stack.push( fn.apply(window, stack.splice(-arity) ))
+          return stack;
+        };
+        return stack;
+      },
+
+      // n -- n n
+      'dup': function(stack) {
+        stack.push(stack.last());
+        return stack;
+      },
+
+      // [list] [fn] -- [list']
+      'map': function(stack) {
+        var fn = stack.pop()
+        var list = stack.pop()
+
+        // var ary = list([])
+        // var mapped_ary = ary.map(function(a) { return fn([a]) }).flatten()
+        // var qlist = Joy.quoteList( mapped_ary )
+
+        stack.push( Joy.quoteList( list([]).map(function(a) { return fn([a]) }).flatten() ) );
+
+        return stack;
+      },
+
+      // a b -- b a
+      'swap': function(stack) {
+        return stack.concat([stack.pop(), stack.pop()]);
+      },
+
+      // a b -- b a
+      'clear': function(stack) {
+        return [];
+      },
+
+      // [] --
+      'i': function(stack) {
+        return stack.pop()(stack);
+      },
+
+      // a b -- b+a
+      '+': function(stack) {
+        stack.push(stack.pop() + stack.pop());
+        return stack;
+      },
+
+      // a b -- b-a
+      '-': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        stack.push(b - a);
+        return stack;
+      },
+
+      // a b -- b*a
+      '*': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        if(typeof a !== "number" || typeof b !== "number") throw new EvalError("Word '*' expects two numbers, got " + (b.toString()) + " and " + (a.toString()))
+        stack.push(b * a);
+        return stack;
+      },
+
+
+      // a b -- b/a
+      '/': function(stack) {
+        var a = stack.pop();
+        var b = stack.pop();
+        stack.push(b / a);
+        return stack;
+      },
+
+      // a --
+      '.': function(stack) {
+        console.log(stack.pop());
+        return stack;
+      }
+    },
+
+    compile: function(source) {
+      return PLT.parser.parse(source);
+    },
+
+    quoteList: function(list) {
+      return Joy.execProgram( list.map(function(l) { return Joy.pushLiteral(l); }))
+    },
+
+    /*
+     * Return a function that takes a stack and executes `program` on the
+     * stack
+     * 
+     * program - a js array of joy functions
+     */
+    execProgram: function(program) {
+      var p = function(stack) {
+        if(stack == undefined) throw new EvalError("No stack passed to program " + p.toString());
+        return program.reduce(function(s, f) {
+          return f(s.clone())
+        }, stack)
+      }
+      p.toString = function() { return '[' + program.join(' ') + ']' };
+      p.literal = program;
+
+      return p;
+    },
+
+    /* 
+     * Return a function that takes a stack and returns a new stack with
+     * `literal` pushed on top
+     * 
+     * literal - a js literal
+     */
+    pushLiteral: function(literal) {
+      var l = function(stack) {
+        stack.push(literal)
+        return stack;
+      };
+      l.toString = function() { return typeof literal == "function" ? literal.toString() : JSON.stringify(literal) };
+      l.literal = literal;
+
+      return l;
+    },
+
+    /* 
+     * Return a function that takes a stack, looks up `word`, and executes it
+     * on the stack
+     * 
+     * word - a string
+     */
+    execWord: function(word) {
+      var w = function(stack) {
+        if(Joy.dictionary[word] === undefined) throw new EvalError("Word '" + word + "' is not in dictionary");
+
+        return Joy.dictionary[word](stack)
+      }
+      w.toString = function() { return word };
+
+      return w;
+    }
+  }
+
+</script>
+
+<title>Joy</title>
+
+<grammar>
+  start                         = program
+
+  program                       = p:literal* { return Joy.execProgram( p ) }
+
+  literal                       = l:(quotation / string / number / word) space { return l }
+
+  quotation                     = '[' space p:program ']' { return Joy.pushLiteral( p ) }
+
+  string                        = s:(single_quoted_string / double_quoted_string) { return Joy.pushLiteral( s ) }
+  double_quoted_string          = '"' s:[^"]+ '"' { return s.join('') }
+  single_quoted_string          = "'" s:[^ \n;\{\}\(\)]+ { return s.join('') }
+
+  word                          = w:[^\[\] ]+ { return Joy.execWord( w.join('') ) }
+
+  number                        = n:(float_between_01 / float / integer) { return Joy.pushLiteral( n ) }
+  float                         = n:digit+ '.' m:digit+ { return parseFloat( n.join('') + "." + m.join('') )}
+  float_between_01              = '.' n:digit+ { return parseFloat( "0." + n.join('') )}
+  integer                       = n:digit+ { return parseInt(n.join('')) }
+  digit                         = [0123456789]
+
+  space                         = [ ]* { return undefined }
+  mandatory_space               = [ ]+ { return undefined }
+</grammar>
+
+<h3>Number Literals</h3>
+<code>20</code>
+<code>207</code>
+<code>.75</code>
+<code>42.13</code>
+
+<h3>String Literals</h3>
+<code>"double quote"</code>
+<code>'single</code>
+<code>'*</code>
+
+<h3>Words</h3>
+<code>hello</code>
+<code></code>
+<code>hello-world</code>
+<code>m1a1</code>
+<code>-></code>
+
+<h3>Quotations</h3>
+<code>[5 1 +]</code>
+<code>[5 1 + [dup *] i]</code>
+<code>[hello world]</code>
+<code>[hello world ]</code>
+<code>[ hello world]</code>
+<code>[ hello world ]</code>
+<code>[hello
+  world]</code>
+
+<canvas></canvas>

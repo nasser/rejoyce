@@ -1,0 +1,1 @@
+edn\create_list([edn\symbol('a'), edn\symbol('b'), 42])

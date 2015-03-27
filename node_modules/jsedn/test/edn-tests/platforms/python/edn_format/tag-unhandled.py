@@ -1,0 +1,1 @@
+MyAppPerson("Fred", "Mertz")

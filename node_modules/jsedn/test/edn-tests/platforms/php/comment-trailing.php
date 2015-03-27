@@ -1,0 +1,1 @@
+edn\create_vector([edn\symbol('valid'), edn\symbol('more'), edn\symbol('items')])

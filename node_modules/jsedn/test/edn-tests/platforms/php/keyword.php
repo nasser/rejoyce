@@ -1,0 +1,1 @@
+edn\keyword('namespace.of.some.length/keyword-name')

@@ -1,0 +1,1 @@
+edn\symbol('foo/bar')

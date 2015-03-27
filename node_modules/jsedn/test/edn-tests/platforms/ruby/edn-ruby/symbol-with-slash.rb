@@ -1,0 +1,1 @@
+EDN.symbol("foo/bar")

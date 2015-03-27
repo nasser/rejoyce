@@ -1,0 +1,1 @@
+[EDN.symbol("/"), EDN.symbol("."), EDN.symbol("*"), EDN.symbol("!"), EDN.symbol("_"), EDN.symbol("?"), EDN.symbol("$"), EDN.symbol("%"), EDN.symbol("&"), EDN.symbol("="), EDN.symbol("-"), EDN.symbol("+")]

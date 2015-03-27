@@ -1,0 +1,11 @@
+edn\create_list([
+    edn\symbol('a'),
+    edn\create_list([
+        edn\symbol('b'),
+        42,
+        edn\create_list([
+            edn\symbol('c'),
+            edn\symbol('d'),
+        ]),
+    ]),
+])

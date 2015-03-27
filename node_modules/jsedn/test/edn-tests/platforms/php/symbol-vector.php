@@ -1,0 +1,14 @@
+edn\create_vector([
+    edn\symbol('/'),
+    edn\symbol('.'),
+    edn\symbol('*'),
+    edn\symbol('!'),
+    edn\symbol('_'),
+    edn\symbol('?'),
+    edn\symbol('$'),
+    edn\symbol('%'),
+    edn\symbol('&'),
+    edn\symbol('='),
+    edn\symbol('-'),
+    edn\symbol('+'),
+])

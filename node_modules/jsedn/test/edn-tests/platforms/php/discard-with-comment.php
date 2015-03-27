@@ -1,0 +1,1 @@
+edn\create_vector([edn\symbol('a'), edn\symbol('d')])

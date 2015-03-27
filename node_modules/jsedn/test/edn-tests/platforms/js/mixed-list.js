@@ -1,0 +1,1 @@
+["defproject", "com.thortech/data.edn", "0.1.0-SNAPSHOT"]

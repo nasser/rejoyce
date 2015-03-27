@@ -1,0 +1,10 @@
+{
+	"name": "jsedn-edn-tests-runner",
+	"version": "0.0.1",
+	"dependencies": {
+		"coffee-script": "latest",
+		"jsedn": "latest",
+		"equals": "latest",
+		"micro": "latest"
+	}
+}

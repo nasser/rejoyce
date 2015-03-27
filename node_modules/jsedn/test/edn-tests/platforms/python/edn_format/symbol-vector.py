@@ -1,0 +1,1 @@
+[edn_format.Symbol("/"), edn_format.Symbol("."), edn_format.Symbol("*"), edn_format.Symbol("!"), edn_format.Symbol("_"), edn_format.Symbol("?"), edn_format.Symbol("$"),edn_format.Symbol("%"), edn_format.Symbol("&"), edn_format.Symbol("="), edn_format.Symbol("-"), edn_format.Symbol("+")]

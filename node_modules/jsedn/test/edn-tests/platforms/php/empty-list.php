@@ -1,0 +1,1 @@
+edn\create_list([])
